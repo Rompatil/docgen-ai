@@ -21,7 +21,7 @@ jobs:
           node-version: '20'
 
       - name: Install docgen
-        run: npm install -g @docgen/cli
+         run: npm install -g docgen-ai
 
       - name: Generate documentation
         env:
