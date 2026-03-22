@@ -21,7 +21,7 @@ jobs:
           node-version: '20'
 
       - name: Install docgen
-        run: npm install -g @docgen/core
+        run: npm install -g @docgen/cli
 
       - name: Generate documentation
         env:

@@ -2,7 +2,7 @@
 
 ## Overview
 
-[No API key configured — summaries unavailable]
+[AI summarization disabled — enable in config to get human-readable descriptions]
 
 ## Module Relationships
 
@@ -29,6 +29,7 @@ graph TD
   core_analyzers --> types
   core_analyzers --> core_parsers
   core_analyzers --> utils
+  core_analyzers --> core_cache
   core_cache --> types
   core_cache --> utils
   core_generators --> types
@@ -82,9 +83,9 @@ graph TD
 
 - **Role:** General
 - **Files:** 1
-- **Lines:** 231
+- **Lines:** 240
 - **Exports:** `analyzeProject`
-- **Depends on:** `types`, `core/parsers`, `utils`
+- **Depends on:** `types`, `core/parsers`, `utils`, `core/cache`
 - **Used by:** `core`
 
 ### core/cache
@@ -94,6 +95,7 @@ graph TD
 - **Lines:** 60
 - **Exports:** `AnalysisCache`
 - **Depends on:** `types`, `utils`
+- **Used by:** `core/analyzers`
 
 ### core/generators
 

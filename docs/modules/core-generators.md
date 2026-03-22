@@ -2,7 +2,7 @@
 
 ## Overview
 
-[No API key configured — summaries unavailable]
+The `core/generators` module contains 8 files and exports 15 public symbols.  Dependencies: types, utils, ai. Used by: core.
 
 ## Files
 

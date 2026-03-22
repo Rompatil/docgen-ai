@@ -1,0 +1,145 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`JavaScript Parser user-routes.js should match snapshot 1`] = `
+{
+  "filePath": "__fixtures__/javascript/user-routes.js",
+  "relativePath": "javascript/user-routes.js",
+  "language": "javascript",
+  "lineCount": 55,
+  "contentHash": "<HASH>",
+  "functions": [
+    {
+      "name": "formatUser",
+      "params": [
+        {
+          "name": "user",
+          "isOptional": false
+        }
+      ],
+      "isExported": false,
+      "isAsync": false,
+      "startLine": 56,
+      "endLine": 59,
+      "complexity": 1,
+      "existingDoc": "*\\n * Format a user object for API response.\\n * Strips sensitive fields like password.\\n * @param {Object} user - Raw user object\\n * @returns {Object} Sanitized user\\n ",
+      "body": "<BODY>",
+      "decorators": []
+    },
+    {
+      "name": "isAdmin",
+      "params": [
+        {
+          "name": "user",
+          "isOptional": false
+        }
+      ],
+      "isExported": false,
+      "isAsync": false,
+      "startLine": 61,
+      "endLine": 63,
+      "complexity": 1,
+      "body": "<BODY>",
+      "decorators": []
+    }
+  ],
+  "classes": [],
+  "imports": [],
+  "exports": [],
+  "apiEndpoints": [
+    {
+      "method": "GET",
+      "path": "/users",
+      "handler": "anonymous",
+      "middleware": [
+        "authenticate"
+      ],
+      "requiresAuth": true,
+      "filePath": "__fixtures__/javascript/user-routes.js",
+      "line": 19
+    },
+    {
+      "method": "GET",
+      "path": "/users/:id",
+      "handler": "anonymous",
+      "middleware": [
+        "authenticate"
+      ],
+      "requiresAuth": true,
+      "filePath": "__fixtures__/javascript/user-routes.js",
+      "line": 26
+    },
+    {
+      "method": "POST",
+      "path": "/users",
+      "handler": "anonymous",
+      "middleware": [
+        "authenticate",
+        "validate"
+      ],
+      "requiresAuth": true,
+      "filePath": "__fixtures__/javascript/user-routes.js",
+      "line": 33
+    },
+    {
+      "method": "PUT",
+      "path": "/users/:id",
+      "handler": "anonymous",
+      "middleware": [
+        "authenticate"
+      ],
+      "requiresAuth": true,
+      "filePath": "__fixtures__/javascript/user-routes.js",
+      "line": 39
+    },
+    {
+      "method": "DELETE",
+      "path": "/users/:id",
+      "handler": "anonymous",
+      "middleware": [
+        "authenticate"
+      ],
+      "requiresAuth": true,
+      "filePath": "__fixtures__/javascript/user-routes.js",
+      "line": 45
+    }
+  ],
+  "comments": [
+    {
+      "type": "jsdoc",
+      "text": "*\\n * User management routes.\\n * Handles CRUD operations for user accounts.",
+      "line": 1
+    },
+    {
+      "type": "jsdoc",
+      "text": "*\\n * Get all users with optional filtering.\\n * @param {Object} req - Express request\\n * @param {Object} res - Express response",
+      "line": 14
+    },
+    {
+      "type": "line",
+      "text": "Get single user by ID",
+      "line": 25
+    },
+    {
+      "type": "line",
+      "text": "Create a new user",
+      "line": 32
+    },
+    {
+      "type": "line",
+      "text": "Update user",
+      "line": 38
+    },
+    {
+      "type": "line",
+      "text": "Delete user",
+      "line": 44
+    },
+    {
+      "type": "jsdoc",
+      "text": "*\\n * Format a user object for API response.\\n * Strips sensitive fields like password.\\n * @param {Object} user - Raw user object\\n * @returns {Object} Sanitized user",
+      "line": 50
+    }
+  ],
+  "parseErrors": []
+}
+`;

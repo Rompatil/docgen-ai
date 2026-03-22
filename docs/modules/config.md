@@ -4,7 +4,7 @@
 
 ## Overview
 
-[No API key configured — summaries unavailable]
+The `config` module contains 1 file and exports 3 public symbols. Serves as a **config** layer. Dependencies: types. Used by: cli.
 
 ## Files
 

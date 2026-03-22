@@ -7,7 +7,7 @@ This project is organized into the following modules:
 | [ai](./modules/ai.md) | — | 1 | 218 | 2 |
 | [cli](./modules/cli.md) | api | 1 | 299 | 4 |
 | [config](./modules/config.md) | config | 1 | 92 | 1 |
-| [core/analyzers](./modules/core-analyzers.md) | — | 1 | 231 | 3 |
+| [core/analyzers](./modules/core-analyzers.md) | — | 1 | 240 | 4 |
 | [core/cache](./modules/core-cache.md) | — | 1 | 60 | 2 |
 | [core/generators](./modules/core-generators.md) | — | 8 | 964 | 3 |
 | [core/parsers](./modules/core-parsers.md) | — | 3 | 600 | 2 |

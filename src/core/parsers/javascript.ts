@@ -89,6 +89,18 @@ export function parseJavaScriptFile(
         });
       },
 
+      TSInterfaceDeclaration(nodePath) {
+        if (t.isExportNamedDeclaration(nodePath.parent) && nodePath.node.id) {
+          result.exports.push({ name: nodePath.node.id.name, type: 'type', isDefault: false });
+        }
+      },
+
+      TSTypeAliasDeclaration(nodePath) {
+        if (t.isExportNamedDeclaration(nodePath.parent) && nodePath.node.id) {
+          result.exports.push({ name: nodePath.node.id.name, type: 'type', isDefault: false });
+        }
+      },
+
       CallExpression(nodePath) {
         const ep = detectExpressEndpoint(nodePath.node, filePath);
         if (ep) result.apiEndpoints.push(ep);
@@ -267,8 +279,8 @@ function extractNamedExport(node: t.ExportNamedDeclaration, exports: ExportInfo[
   else if (t.isVariableDeclaration(decl))
     for (const d of decl.declarations)
       if (t.isIdentifier(d.id)) exports.push({ name: d.id.name, type: 'variable', isDefault: false });
-  else if ('id' in decl && decl.id && t.isIdentifier(decl.id as any))
-    exports.push({ name: (decl.id as t.Identifier).name, type: 'type', isDefault: false });
+  else if ((decl as any).type === 'TSInterfaceDeclaration' || (decl as any).type === 'TSTypeAliasDeclaration')
+    exports.push({ name: (decl as any).id.name, type: 'type', isDefault: false });
 }
 
 // ─── Express Endpoint Detection ──────────────────────────────────────────────

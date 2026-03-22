@@ -1,9 +1,9 @@
 # src/core/analyzers/project.ts
 
-**Language:** typescript | **Lines:** 231
+**Language:** typescript | **Lines:** 240
 
 **External imports:** `path`, `fs`
-**Internal imports:** `../../types/definitions`, `../parsers/registry`, `../../utils/helpers`, `../../utils/logger`
+**Internal imports:** `../../types/definitions`, `../parsers/registry`, `../../utils/helpers`, `../cache/file-cache`, `../../utils/logger`
 
 ## Functions
 
@@ -11,7 +11,7 @@
 
 **Returns:** `Promise`
 
-**Complexity:** 7 ⚠️ (consider refactoring)
+**Complexity:** 9 ⚠️ (consider refactoring)
 
 Async function `analyzeProject(config: DocgenConfig)`. Returns `Promise`. ⚠️ High complexity.
 
@@ -21,6 +21,6 @@ Async function `analyzeProject(config: DocgenConfig)`. Returns `Promise`. ⚠️
 |------|------|:--------:|---------|-------------|
 | `config` | `DocgenConfig` | — | — | — |
 
-📍 Defined at line 19–85
+📍 Defined at line 20–94
 
 ---

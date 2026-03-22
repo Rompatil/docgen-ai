@@ -1,0 +1,418 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`TypeScript Parser barrel-exports.ts should match snapshot 1`] = `
+{
+  "filePath": "__fixtures__/typescript/barrel-exports.ts",
+  "relativePath": "typescript/barrel-exports.ts",
+  "language": "typescript",
+  "lineCount": 10,
+  "contentHash": "<HASH>",
+  "functions": [],
+  "classes": [],
+  "imports": [],
+  "exports": [
+    {
+      "name": "TaskService",
+      "type": "variable",
+      "isDefault": false
+    },
+    {
+      "name": "CacheService",
+      "type": "variable",
+      "isDefault": false
+    },
+    {
+      "name": "ServiceName",
+      "type": "type",
+      "isDefault": false
+    },
+    {
+      "name": "ServiceConfig",
+      "type": "type",
+      "isDefault": false
+    },
+    {
+      "name": "DEFAULT_TIMEOUT",
+      "type": "variable",
+      "isDefault": false
+    },
+    {
+      "name": "MAX_RETRIES",
+      "type": "variable",
+      "isDefault": false
+    }
+  ],
+  "apiEndpoints": [],
+  "comments": [],
+  "parseErrors": []
+}
+`;
+
+exports[`TypeScript Parser task-service.ts should match snapshot 1`] = `
+{
+  "filePath": "__fixtures__/typescript/task-service.ts",
+  "relativePath": "typescript/task-service.ts",
+  "language": "typescript",
+  "lineCount": 117,
+  "contentHash": "<HASH>",
+  "functions": [
+    {
+      "name": "isOverdue",
+      "params": [
+        {
+          "name": "task",
+          "type": "Task",
+          "isOptional": false
+        }
+      ],
+      "returnType": "boolean",
+      "isExported": true,
+      "isAsync": false,
+      "startLine": 127,
+      "endLine": 130,
+      "complexity": 3,
+      "body": "<BODY>",
+      "decorators": []
+    },
+    {
+      "name": "formatTaskResponse",
+      "params": [
+        {
+          "name": "task",
+          "type": "Task",
+          "isOptional": false
+        },
+        {
+          "name": "includeDetails",
+          "defaultValue": "complex",
+          "isOptional": true
+        }
+      ],
+      "returnType": "Record",
+      "isExported": true,
+      "isAsync": false,
+      "startLine": 132,
+      "endLine": 136,
+      "complexity": 2,
+      "body": "<BODY>",
+      "decorators": []
+    }
+  ],
+  "classes": [
+    {
+      "name": "TaskService",
+      "implements": [],
+      "methods": [
+        {
+          "name": "constructor",
+          "className": "TaskService",
+          "params": [
+            {
+              "name": "unknown",
+              "isOptional": false
+            },
+            {
+              "name": "unknown",
+              "isOptional": false
+            }
+          ],
+          "isExported": false,
+          "isAsync": false,
+          "startLine": 31,
+          "endLine": 37,
+          "complexity": 1,
+          "decorators": []
+        },
+        {
+          "name": "findByUser",
+          "className": "TaskService",
+          "params": [
+            {
+              "name": "userId",
+              "type": "string",
+              "isOptional": false
+            },
+            {
+              "name": "options",
+              "type": "TaskQueryOptions",
+              "isOptional": false
+            }
+          ],
+          "returnType": "Promise",
+          "isExported": false,
+          "isAsync": true,
+          "startLine": 39,
+          "endLine": 62,
+          "complexity": 5,
+          "decorators": []
+        },
+        {
+          "name": "findById",
+          "className": "TaskService",
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "isOptional": false
+            }
+          ],
+          "returnType": "Promise",
+          "isExported": false,
+          "isAsync": true,
+          "startLine": 64,
+          "endLine": 66,
+          "complexity": 1,
+          "decorators": []
+        },
+        {
+          "name": "create",
+          "className": "TaskService",
+          "params": [
+            {
+              "name": "data",
+              "type": "Partial",
+              "isOptional": false
+            },
+            {
+              "name": "userId",
+              "type": "string",
+              "isOptional": false
+            }
+          ],
+          "returnType": "Promise",
+          "isExported": false,
+          "isAsync": true,
+          "startLine": 68,
+          "endLine": 75,
+          "complexity": 1,
+          "decorators": []
+        },
+        {
+          "name": "update",
+          "className": "TaskService",
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "isOptional": false
+            },
+            {
+              "name": "data",
+              "type": "Partial",
+              "isOptional": false
+            }
+          ],
+          "returnType": "Promise",
+          "isExported": false,
+          "isAsync": true,
+          "startLine": 77,
+          "endLine": 85,
+          "complexity": 2,
+          "decorators": []
+        },
+        {
+          "name": "delete",
+          "className": "TaskService",
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "isOptional": false
+            }
+          ],
+          "returnType": "Promise",
+          "isExported": false,
+          "isAsync": true,
+          "startLine": 87,
+          "endLine": 95,
+          "complexity": 2,
+          "decorators": []
+        },
+        {
+          "name": "assign",
+          "className": "TaskService",
+          "params": [
+            {
+              "name": "taskId",
+              "type": "string",
+              "isOptional": false
+            },
+            {
+              "name": "assigneeId",
+              "type": "string",
+              "isOptional": false
+            }
+          ],
+          "returnType": "Promise",
+          "isExported": false,
+          "isAsync": true,
+          "startLine": 97,
+          "endLine": 104,
+          "complexity": 3,
+          "decorators": []
+        },
+        {
+          "name": "markComplete",
+          "className": "TaskService",
+          "params": [
+            {
+              "name": "taskId",
+              "type": "string",
+              "isOptional": false
+            }
+          ],
+          "returnType": "Promise",
+          "isExported": false,
+          "isAsync": true,
+          "startLine": 106,
+          "endLine": 114,
+          "complexity": 2,
+          "decorators": []
+        },
+        {
+          "name": "getStats",
+          "className": "TaskService",
+          "params": [
+            {
+              "name": "userId",
+              "type": "string",
+              "isOptional": false
+            }
+          ],
+          "returnType": "Promise",
+          "isExported": false,
+          "isAsync": true,
+          "startLine": 116,
+          "endLine": 120,
+          "complexity": 2,
+          "decorators": []
+        },
+        {
+          "name": "onEvent",
+          "className": "TaskService",
+          "params": [
+            {
+              "name": "event",
+              "type": "string",
+              "isOptional": false
+            },
+            {
+              "name": "handler",
+              "type": "unknown",
+              "isOptional": false
+            }
+          ],
+          "returnType": "void",
+          "isExported": false,
+          "isAsync": false,
+          "startLine": 122,
+          "endLine": 124,
+          "complexity": 1,
+          "decorators": []
+        }
+      ],
+      "properties": [
+        {
+          "name": "logger",
+          "type": "Logger",
+          "isStatic": false,
+          "isPrivate": true
+        },
+        {
+          "name": "events",
+          "type": "EventEmitter",
+          "isStatic": false,
+          "isPrivate": true
+        }
+      ],
+      "isExported": true,
+      "startLine": 26,
+      "endLine": 125,
+      "decorators": [
+        "@Injectable(...)"
+      ]
+    }
+  ],
+  "imports": [
+    {
+      "source": "@nestjs/common",
+      "specifiers": [
+        "Injectable"
+      ],
+      "isRelative": false
+    },
+    {
+      "source": "typeorm",
+      "specifiers": [
+        "Repository"
+      ],
+      "isRelative": false
+    },
+    {
+      "source": "events",
+      "specifiers": [
+        "EventEmitter"
+      ],
+      "isRelative": false
+    },
+    {
+      "source": "../utils/logger",
+      "specifiers": [
+        "Logger"
+      ],
+      "isRelative": true
+    },
+    {
+      "source": "../models/task",
+      "specifiers": [
+        "Task",
+        "TaskStatus"
+      ],
+      "isRelative": true
+    },
+    {
+      "source": "./cache-service",
+      "specifiers": [
+        "CacheService"
+      ],
+      "isRelative": true
+    }
+  ],
+  "exports": [
+    {
+      "name": "TaskQueryOptions",
+      "type": "type",
+      "isDefault": false
+    },
+    {
+      "name": "PaginatedResult",
+      "type": "type",
+      "isDefault": false
+    },
+    {
+      "name": "TaskService",
+      "type": "class",
+      "isDefault": false
+    },
+    {
+      "name": "isOverdue",
+      "type": "function",
+      "isDefault": false
+    },
+    {
+      "name": "formatTaskResponse",
+      "type": "function",
+      "isDefault": false
+    }
+  ],
+  "apiEndpoints": [],
+  "comments": [
+    {
+      "type": "jsdoc",
+      "text": "*\\n * Core business logic for task management.",
+      "line": 23
+    }
+  ],
+  "parseErrors": []
+}
+`;

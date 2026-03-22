@@ -2,7 +2,7 @@
 
 ## Overview
 
-[No API key configured — summaries unavailable]
+The `core` module contains 1 file and exports 2 public symbols.  Dependencies: types, core/analyzers, core/generators, utils. Used by: cli.
 
 ## Files
 

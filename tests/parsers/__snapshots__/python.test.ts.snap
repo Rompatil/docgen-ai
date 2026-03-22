@@ -1,0 +1,964 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Python Parser product-api.py should match snapshot 1`] = `
+{
+  "filePath": "__fixtures__/python/product-api.py",
+  "relativePath": "python/product-api.py",
+  "language": "python",
+  "lineCount": 168,
+  "contentHash": "<HASH>",
+  "functions": [
+    {
+      "name": "list_products",
+      "params": [
+        {
+          "name": "category",
+          "type": "Optional[str]",
+          "defaultValue": "None",
+          "isOptional": true
+        },
+        {
+          "name": "min_price",
+          "type": "Optional[float]",
+          "defaultValue": "None",
+          "isOptional": true
+        },
+        {
+          "name": "max_price",
+          "type": "Optional[float]",
+          "defaultValue": "None",
+          "isOptional": true
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "defaultValue": "Query(1",
+          "isOptional": true
+        },
+        {
+          "name": "ge",
+          "defaultValue": "1)",
+          "isOptional": true
+        },
+        {
+          "name": "limit",
+          "type": "int",
+          "defaultValue": "Query(DEFAULT_PAGE_SIZE",
+          "isOptional": true
+        },
+        {
+          "name": "ge",
+          "defaultValue": "1",
+          "isOptional": true
+        },
+        {
+          "name": "le",
+          "defaultValue": "100)",
+          "isOptional": true
+        },
+        {
+          "name": "db",
+          "type": "Database",
+          "defaultValue": "Depends(get_db)",
+          "isOptional": true
+        },
+        {
+          "name": "",
+          "isOptional": false
+        }
+      ],
+      "isExported": true,
+      "isAsync": true,
+      "startLine": 98,
+      "endLine": 104,
+      "complexity": 1,
+      "body": "<BODY>",
+      "decorators": [
+        "@router.get(\\"/\\", response_model=List[ProductResponse])",
+        "@cache_response(ttl=30)"
+      ]
+    },
+    {
+      "name": "get_product",
+      "params": [
+        {
+          "name": "product_id",
+          "type": "str",
+          "isOptional": false
+        },
+        {
+          "name": "db",
+          "type": "Database",
+          "defaultValue": "Depends(get_db)",
+          "isOptional": true
+        }
+      ],
+      "isExported": true,
+      "isAsync": true,
+      "startLine": 116,
+      "endLine": 123,
+      "complexity": 2,
+      "existingDoc": "Get a single product by ID.",
+      "body": "<BODY>",
+      "decorators": [
+        "@router.get(\\"/{product_id}\\", response_model=ProductResponse)"
+      ]
+    },
+    {
+      "name": "create_product",
+      "params": [
+        {
+          "name": "product",
+          "type": "ProductCreate",
+          "isOptional": false
+        },
+        {
+          "name": "current_user",
+          "type": "User",
+          "defaultValue": "Depends(get_current_user)",
+          "isOptional": true
+        },
+        {
+          "name": "db",
+          "type": "Database",
+          "defaultValue": "Depends(get_db)",
+          "isOptional": true
+        },
+        {
+          "name": "",
+          "isOptional": false
+        }
+      ],
+      "isExported": true,
+      "isAsync": true,
+      "startLine": 125,
+      "endLine": 128,
+      "complexity": 1,
+      "body": "<BODY>",
+      "decorators": [
+        "@router.post(\\"/\\", response_model=ProductResponse, status_code=201)"
+      ]
+    },
+    {
+      "name": "update_product",
+      "params": [
+        {
+          "name": "product_id",
+          "type": "str",
+          "isOptional": false
+        },
+        {
+          "name": "updates",
+          "type": "ProductUpdate",
+          "isOptional": false
+        },
+        {
+          "name": "current_user",
+          "type": "User",
+          "defaultValue": "Depends(get_current_user)",
+          "isOptional": true
+        },
+        {
+          "name": "db",
+          "type": "Database",
+          "defaultValue": "Depends(get_db)",
+          "isOptional": true
+        },
+        {
+          "name": "",
+          "isOptional": false
+        }
+      ],
+      "isExported": true,
+      "isAsync": true,
+      "startLine": 140,
+      "endLine": 144,
+      "complexity": 1,
+      "body": "<BODY>",
+      "decorators": [
+        "@router.put(\\"/{product_id}\\", response_model=ProductResponse)"
+      ]
+    },
+    {
+      "name": "delete_product",
+      "params": [
+        {
+          "name": "product_id",
+          "type": "str",
+          "isOptional": false
+        },
+        {
+          "name": "current_user",
+          "type": "User",
+          "defaultValue": "Depends(get_current_user)",
+          "isOptional": true
+        },
+        {
+          "name": "db",
+          "type": "Database",
+          "defaultValue": "Depends(get_db)",
+          "isOptional": true
+        },
+        {
+          "name": "",
+          "isOptional": false
+        }
+      ],
+      "isExported": true,
+      "isAsync": true,
+      "startLine": 157,
+      "endLine": 160,
+      "complexity": 1,
+      "body": "<BODY>",
+      "decorators": [
+        "@router.delete(\\"/{product_id}\\", status_code=204)"
+      ]
+    },
+    {
+      "name": "check_stock",
+      "params": [
+        {
+          "name": "product_id",
+          "type": "str",
+          "isOptional": false
+        },
+        {
+          "name": "db",
+          "type": "Database",
+          "defaultValue": "Depends(get_db)",
+          "isOptional": true
+        }
+      ],
+      "isExported": true,
+      "isAsync": true,
+      "startLine": 169,
+      "endLine": 174,
+      "complexity": 2,
+      "existingDoc": "Check inventory for a product.",
+      "body": "<BODY>",
+      "decorators": [
+        "@router.get(\\"/{product_id}/stock\\")"
+      ]
+    },
+    {
+      "name": "restock_product",
+      "params": [
+        {
+          "name": "product_id",
+          "type": "str",
+          "isOptional": false
+        },
+        {
+          "name": "quantity",
+          "type": "int",
+          "defaultValue": "Query(...",
+          "isOptional": true
+        },
+        {
+          "name": "gt",
+          "defaultValue": "0)",
+          "isOptional": true
+        },
+        {
+          "name": "current_user",
+          "type": "User",
+          "defaultValue": "Depends(get_current_user)",
+          "isOptional": true
+        },
+        {
+          "name": "db",
+          "type": "Database",
+          "defaultValue": "Depends(get_db)",
+          "isOptional": true
+        },
+        {
+          "name": "",
+          "isOptional": false
+        }
+      ],
+      "isExported": true,
+      "isAsync": true,
+      "startLine": 176,
+      "endLine": 180,
+      "complexity": 1,
+      "body": "<BODY>",
+      "decorators": [
+        "@router.post(\\"/{product_id}/restock\\")"
+      ]
+    },
+    {
+      "name": "calculate_discount",
+      "params": [
+        {
+          "name": "price",
+          "type": "float",
+          "isOptional": false
+        },
+        {
+          "name": "discount_percent",
+          "type": "float",
+          "isOptional": false
+        }
+      ],
+      "returnType": "float",
+      "isExported": true,
+      "isAsync": false,
+      "startLine": 187,
+      "endLine": 201,
+      "complexity": 4,
+      "existingDoc": "Apply a percentage discount to a price.\\n\\nArgs:\\nprice: Original price\\ndiscount_percent: Discount as a percentage (0-100)\\n\\nReturns:\\nDiscounted price, never below zero",
+      "body": "<BODY>",
+      "decorators": []
+    },
+    {
+      "name": "format_price",
+      "params": [
+        {
+          "name": "amount",
+          "type": "float",
+          "isOptional": false
+        },
+        {
+          "name": "currency",
+          "type": "str",
+          "defaultValue": "\\"USD\\"",
+          "isOptional": true
+        }
+      ],
+      "returnType": "str",
+      "isExported": true,
+      "isAsync": false,
+      "startLine": 202,
+      "endLine": 207,
+      "complexity": 1,
+      "existingDoc": "Format a price with currency symbol.",
+      "body": "<BODY>",
+      "decorators": []
+    }
+  ],
+  "classes": [
+    {
+      "name": "ProductCreate",
+      "superClass": "BaseModel",
+      "implements": [],
+      "methods": [],
+      "properties": [],
+      "isExported": true,
+      "startLine": 22,
+      "endLine": 31,
+      "existingDoc": "Schema for creating a new product.",
+      "decorators": []
+    },
+    {
+      "name": "ProductUpdate",
+      "superClass": "BaseModel",
+      "implements": [],
+      "methods": [],
+      "properties": [],
+      "isExported": true,
+      "startLine": 32,
+      "endLine": 40,
+      "existingDoc": "Schema for partial product updates.",
+      "decorators": []
+    },
+    {
+      "name": "ProductResponse",
+      "superClass": "BaseModel",
+      "implements": [],
+      "methods": [],
+      "properties": [],
+      "isExported": true,
+      "startLine": 41,
+      "endLine": 50,
+      "existingDoc": "API response model for a product.",
+      "decorators": []
+    },
+    {
+      "name": "InventoryManager",
+      "implements": [],
+      "methods": [
+        {
+          "name": "__init__",
+          "className": "InventoryManager",
+          "params": [
+            {
+              "name": "db",
+              "type": "Database",
+              "isOptional": false
+            },
+            {
+              "name": "warehouse_url",
+              "type": "str",
+              "defaultValue": "WAREHOUSE_URL",
+              "isOptional": true
+            }
+          ],
+          "isExported": false,
+          "isAsync": false,
+          "startLine": 57,
+          "endLine": 62,
+          "complexity": 1,
+          "decorators": []
+        },
+        {
+          "name": "check_stock",
+          "className": "InventoryManager",
+          "params": [
+            {
+              "name": "product_id",
+              "type": "str",
+              "isOptional": false
+            }
+          ],
+          "returnType": "dict",
+          "isExported": true,
+          "isAsync": true,
+          "startLine": 62,
+          "endLine": 67,
+          "complexity": 1,
+          "decorators": []
+        },
+        {
+          "name": "restock",
+          "className": "InventoryManager",
+          "params": [
+            {
+              "name": "product_id",
+              "type": "str",
+              "isOptional": false
+            },
+            {
+              "name": "quantity",
+              "type": "int",
+              "isOptional": false
+            }
+          ],
+          "returnType": "dict",
+          "isExported": true,
+          "isAsync": true,
+          "startLine": 73,
+          "endLine": 78,
+          "complexity": 1,
+          "decorators": []
+        },
+        {
+          "name": "_should_reorder",
+          "className": "InventoryManager",
+          "params": [
+            {
+              "name": "current_stock",
+              "type": "int",
+              "isOptional": false
+            }
+          ],
+          "returnType": "bool",
+          "isExported": false,
+          "isAsync": false,
+          "startLine": 85,
+          "endLine": 90,
+          "complexity": 1,
+          "decorators": []
+        },
+        {
+          "name": "get_low_stock_products",
+          "className": "InventoryManager",
+          "params": [],
+          "returnType": "List[dict]",
+          "isExported": true,
+          "isAsync": true,
+          "startLine": 89,
+          "endLine": 94,
+          "complexity": 1,
+          "decorators": []
+        }
+      ],
+      "properties": [
+        {
+          "name": "_db",
+          "isStatic": false,
+          "isPrivate": true
+        },
+        {
+          "name": "_warehouse_url",
+          "isStatic": false,
+          "isPrivate": true
+        },
+        {
+          "name": "_reorder_threshold",
+          "isStatic": false,
+          "isPrivate": true
+        }
+      ],
+      "isExported": true,
+      "startLine": 51,
+      "endLine": 95,
+      "existingDoc": "Manages product inventory levels and restocking.\\n\\nConnects to the warehouse API for real-time stock data\\nand handles automatic reorder triggers.",
+      "decorators": []
+    }
+  ],
+  "imports": [
+    {
+      "source": "fastapi",
+      "specifiers": [
+        "APIRouter",
+        "Depends",
+        "HTTPException",
+        "Query"
+      ],
+      "isRelative": false
+    },
+    {
+      "source": "pydantic",
+      "specifiers": [
+        "BaseModel",
+        "Field"
+      ],
+      "isRelative": false
+    },
+    {
+      "source": "typing",
+      "specifiers": [
+        "Optional",
+        "List"
+      ],
+      "isRelative": false
+    },
+    {
+      "source": "datetime",
+      "specifiers": [
+        "datetime"
+      ],
+      "isRelative": false
+    },
+    {
+      "source": "os",
+      "specifiers": [],
+      "isRelative": false,
+      "defaultImport": "os"
+    },
+    {
+      "source": ".database",
+      "specifiers": [
+        "get_db",
+        "Database"
+      ],
+      "isRelative": true
+    },
+    {
+      "source": ".auth",
+      "specifiers": [
+        "get_current_user",
+        "User"
+      ],
+      "isRelative": true
+    },
+    {
+      "source": ".cache",
+      "specifiers": [
+        "cache_response"
+      ],
+      "isRelative": true
+    }
+  ],
+  "exports": [
+    {
+      "name": "list_products",
+      "type": "function",
+      "isDefault": false
+    },
+    {
+      "name": "get_product",
+      "type": "function",
+      "isDefault": false
+    },
+    {
+      "name": "create_product",
+      "type": "function",
+      "isDefault": false
+    },
+    {
+      "name": "update_product",
+      "type": "function",
+      "isDefault": false
+    },
+    {
+      "name": "delete_product",
+      "type": "function",
+      "isDefault": false
+    },
+    {
+      "name": "check_stock",
+      "type": "function",
+      "isDefault": false
+    },
+    {
+      "name": "restock_product",
+      "type": "function",
+      "isDefault": false
+    },
+    {
+      "name": "calculate_discount",
+      "type": "function",
+      "isDefault": false
+    },
+    {
+      "name": "format_price",
+      "type": "function",
+      "isDefault": false
+    },
+    {
+      "name": "ProductCreate",
+      "type": "class",
+      "isDefault": false
+    },
+    {
+      "name": "ProductUpdate",
+      "type": "class",
+      "isDefault": false
+    },
+    {
+      "name": "ProductResponse",
+      "type": "class",
+      "isDefault": false
+    },
+    {
+      "name": "InventoryManager",
+      "type": "class",
+      "isDefault": false
+    }
+  ],
+  "apiEndpoints": [
+    {
+      "method": "GET",
+      "path": "/",
+      "handler": "list_products",
+      "middleware": [],
+      "requiresAuth": false,
+      "filePath": "__fixtures__/python/product-api.py",
+      "line": 96
+    },
+    {
+      "method": "GET",
+      "path": "/{product_id}",
+      "handler": "get_product",
+      "middleware": [],
+      "requiresAuth": false,
+      "filePath": "__fixtures__/python/product-api.py",
+      "line": 115
+    },
+    {
+      "method": "POST",
+      "path": "/",
+      "handler": "create_product",
+      "middleware": [],
+      "requiresAuth": true,
+      "filePath": "__fixtures__/python/product-api.py",
+      "line": 124
+    },
+    {
+      "method": "PUT",
+      "path": "/{product_id}",
+      "handler": "update_product",
+      "middleware": [],
+      "requiresAuth": true,
+      "filePath": "__fixtures__/python/product-api.py",
+      "line": 139
+    },
+    {
+      "method": "DELETE",
+      "path": "/{product_id}",
+      "handler": "delete_product",
+      "middleware": [],
+      "requiresAuth": true,
+      "filePath": "__fixtures__/python/product-api.py",
+      "line": 156
+    },
+    {
+      "method": "GET",
+      "path": "/{product_id}/stock",
+      "handler": "check_stock",
+      "middleware": [],
+      "requiresAuth": false,
+      "filePath": "__fixtures__/python/product-api.py",
+      "line": 168
+    },
+    {
+      "method": "POST",
+      "path": "/{product_id}/restock",
+      "handler": "restock_product",
+      "middleware": [],
+      "requiresAuth": true,
+      "filePath": "__fixtures__/python/product-api.py",
+      "line": 175
+    }
+  ],
+  "comments": [],
+  "parseErrors": []
+}
+`;
+
+exports[`Python Parser utils.py should match snapshot 1`] = `
+{
+  "filePath": "__fixtures__/python/utils.py",
+  "relativePath": "python/utils.py",
+  "language": "python",
+  "lineCount": 50,
+  "contentHash": "<HASH>",
+  "functions": [
+    {
+      "name": "slugify",
+      "params": [
+        {
+          "name": "text",
+          "type": "str",
+          "isOptional": false
+        },
+        {
+          "name": "separator",
+          "type": "str",
+          "defaultValue": "\\"-\\"",
+          "isOptional": true
+        }
+      ],
+      "returnType": "str",
+      "isExported": true,
+      "isAsync": false,
+      "startLine": 7,
+      "endLine": 21,
+      "complexity": 1,
+      "existingDoc": "Convert text to URL-friendly slug.\\n\\nArgs:\\ntext: Input text\\nseparator: Character to use between words\\n\\nReturns:\\nLowercased slug string",
+      "body": "<BODY>",
+      "decorators": []
+    },
+    {
+      "name": "truncate",
+      "params": [
+        {
+          "name": "text",
+          "type": "str",
+          "isOptional": false
+        },
+        {
+          "name": "max_length",
+          "type": "int",
+          "defaultValue": "100",
+          "isOptional": true
+        },
+        {
+          "name": "suffix",
+          "type": "str",
+          "defaultValue": "\\"...\\"",
+          "isOptional": true
+        }
+      ],
+      "returnType": "str",
+      "isExported": true,
+      "isAsync": false,
+      "startLine": 22,
+      "endLine": 28,
+      "complexity": 2,
+      "existingDoc": "Truncate text to max length with suffix.",
+      "body": "<BODY>",
+      "decorators": []
+    },
+    {
+      "name": "chunk_list",
+      "params": [
+        {
+          "name": "items",
+          "type": "List",
+          "isOptional": false
+        },
+        {
+          "name": "size",
+          "type": "int",
+          "isOptional": false
+        }
+      ],
+      "returnType": "List[List]",
+      "isExported": true,
+      "isAsync": false,
+      "startLine": 29,
+      "endLine": 33,
+      "complexity": 2,
+      "existingDoc": "Split a list into chunks of given size.",
+      "body": "<BODY>",
+      "decorators": []
+    }
+  ],
+  "classes": [
+    {
+      "name": "TextProcessor",
+      "implements": [],
+      "methods": [
+        {
+          "name": "__init__",
+          "className": "TextProcessor",
+          "params": [
+            {
+              "name": "locale",
+              "type": "str",
+              "defaultValue": "\\"en\\"",
+              "isOptional": true
+            }
+          ],
+          "isExported": false,
+          "isAsync": false,
+          "startLine": 40,
+          "endLine": 45,
+          "complexity": 1,
+          "decorators": []
+        },
+        {
+          "name": "clean",
+          "className": "TextProcessor",
+          "params": [
+            {
+              "name": "text",
+              "type": "str",
+              "isOptional": false
+            }
+          ],
+          "returnType": "str",
+          "isExported": true,
+          "isAsync": false,
+          "startLine": 44,
+          "endLine": 49,
+          "complexity": 1,
+          "decorators": []
+        },
+        {
+          "name": "extract_emails",
+          "className": "TextProcessor",
+          "params": [
+            {
+              "name": "text",
+              "type": "str",
+              "isOptional": false
+            }
+          ],
+          "returnType": "List[str]",
+          "isExported": true,
+          "isAsync": false,
+          "startLine": 49,
+          "endLine": 54,
+          "complexity": 1,
+          "decorators": []
+        },
+        {
+          "name": "word_count",
+          "className": "TextProcessor",
+          "params": [
+            {
+              "name": "text",
+              "type": "str",
+              "isOptional": false
+            }
+          ],
+          "returnType": "int",
+          "isExported": true,
+          "isAsync": false,
+          "startLine": 54,
+          "endLine": 59,
+          "complexity": 1,
+          "decorators": []
+        },
+        {
+          "name": "_load_stop_words",
+          "className": "TextProcessor",
+          "params": [],
+          "returnType": "set",
+          "isExported": false,
+          "isAsync": false,
+          "startLine": 59,
+          "endLine": 64,
+          "complexity": 1,
+          "decorators": []
+        }
+      ],
+      "properties": [
+        {
+          "name": "locale",
+          "isStatic": false,
+          "isPrivate": false
+        },
+        {
+          "name": "_stop_words",
+          "isStatic": false,
+          "isPrivate": true
+        }
+      ],
+      "isExported": true,
+      "startLine": 34,
+      "endLine": 65,
+      "existingDoc": "Processes and transforms text content.\\n\\nProvides methods for cleaning, normalizing, and\\nextracting information from text strings.",
+      "decorators": []
+    },
+    {
+      "name": "_InternalHelper",
+      "implements": [],
+      "methods": [
+        {
+          "name": "do_something",
+          "className": "_InternalHelper",
+          "params": [],
+          "isExported": true,
+          "isAsync": false,
+          "startLine": 68,
+          "endLine": 73,
+          "complexity": 1,
+          "decorators": []
+        }
+      ],
+      "properties": [],
+      "isExported": false,
+      "startLine": 66,
+      "endLine": 71,
+      "existingDoc": "Private helper - should not appear in exports.",
+      "decorators": []
+    }
+  ],
+  "imports": [
+    {
+      "source": "re",
+      "specifiers": [],
+      "isRelative": false,
+      "defaultImport": "re"
+    },
+    {
+      "source": "typing",
+      "specifiers": [
+        "List",
+        "Dict",
+        "Optional"
+      ],
+      "isRelative": false
+    }
+  ],
+  "exports": [
+    {
+      "name": "slugify",
+      "type": "function",
+      "isDefault": false
+    },
+    {
+      "name": "truncate",
+      "type": "function",
+      "isDefault": false
+    },
+    {
+      "name": "chunk_list",
+      "type": "function",
+      "isDefault": false
+    },
+    {
+      "name": "TextProcessor",
+      "type": "class",
+      "isDefault": false
+    }
+  ],
+  "apiEndpoints": [],
+  "comments": [],
+  "parseErrors": []
+}
+`;

@@ -2,7 +2,7 @@
 
 ## Overview
 
-[No API key configured — summaries unavailable]
+The `ai` module contains 1 file and exports 6 public symbols.  Dependencies: types, utils. Used by: core/generators.
 
 ## Files
 

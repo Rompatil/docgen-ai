@@ -37,4 +37,14 @@ export function getSupportedLanguages(): string[] {
 }
 
 export { parseJavaScriptFile } from './javascript';
-export { parsePythonFile } from './python';
+export { parsePythonFile, parsePythonFileAsync } from './python';
+
+/**
+ * Pre-initialize tree-sitter for Python (call once at startup).
+ * After this, parsePythonFile uses tree-sitter synchronously.
+ */
+export async function warmup(): Promise<void> {
+  const { parsePythonFileAsync } = require('./python');
+  // Parse a trivial file to trigger WASM loading
+  await parsePythonFileAsync('/dev/null', 'pass\n', '/');
+}

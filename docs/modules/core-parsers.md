@@ -2,7 +2,7 @@
 
 ## Overview
 
-[No API key configured — summaries unavailable]
+The `core/parsers` module contains 3 files and exports 7 public symbols.  Dependencies: types, utils. Used by: core/analyzers.
 
 ## Files
 

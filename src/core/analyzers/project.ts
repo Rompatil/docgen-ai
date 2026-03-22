@@ -11,7 +11,8 @@ import {
   ExternalDependency, LanguageStats, ConfigFile, EnvVariable, DocgenConfig,
 } from '../../types/definitions';
 import { parseFile } from '../parsers/registry';
-import { findFiles, detectFrameworks, parsePackageJson, inferModuleName, countLines } from '../../utils/helpers';
+import { findFiles, detectFrameworks, parsePackageJson, inferModuleName, countLines, hashFile } from '../../utils/helpers';
+import { AnalysisCache } from '../cache/file-cache';
 import { logger } from '../../utils/logger';
 
 const log = logger.child('Analyzer');
@@ -28,11 +29,19 @@ export async function analyzeProject(config: DocgenConfig): Promise<ProjectAnaly
   // 2. Parse files
   const analyzedFiles: AnalyzedFile[] = [];
   const errors: Array<{ filePath: string; line?: number; message: string; severity: 'warning' | 'error' }> = [];
+  const cache = new AnalysisCache(config.cache, rootDir);
 
   for (let i = 0; i < files.length; i += config.concurrency) {
     const batch = files.slice(i, i + config.concurrency);
     const results = await Promise.all(batch.map(async (fp) => {
-      try { return parseFile(fp, rootDir); }
+      try {
+        const hash = hashFile(fp);
+        const cached = cache.get(hash);
+        if (cached) return cached;
+        const result = parseFile(fp, rootDir);
+        if (result) cache.set(hash, result);
+        return result;
+      }
       catch (err: any) { errors.push({ filePath: path.relative(rootDir, fp), message: err.message, severity: 'error' }); return null; }
     }));
     for (const r of results) {

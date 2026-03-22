@@ -1,26 +1,124 @@
 /**
  * ============================================================================
- * PYTHON PARSER (Regex-based for Node.js environment)
+ * PYTHON PARSER — Tree-Sitter AST
  * ============================================================================
  *
- * Extracts functions, classes, imports, and FastAPI/Flask endpoints from Python.
- * Uses pattern matching since we can't use Python's ast module from Node.js.
+ * Uses web-tree-sitter (WASM) for real AST parsing of Python files.
+ * This replaces the regex-based parser with proper structural analysis.
+ *
+ * WHY tree-sitter instead of regex?
+ * - Regex breaks on multi-line strings, nested parens, edge cases
+ * - Tree-sitter gives a real parse tree, same as Python's own `ast` module
+ * - Handles decorators, async, type hints, f-strings, walrus operator
+ * - Zero false positives from code inside strings or comments
+ *
+ * ARCHITECTURE:
+ * 1. Initialize tree-sitter once (WASM load is async, cached after first call)
+ * 2. Parse file → SyntaxTree
+ * 3. Walk root children looking for: function_definition, class_definition,
+ *    import_statement, import_from_statement, decorated_definition
+ * 4. Extract metadata from each node using field names
+ * 5. Return the same AnalyzedFile shape as every other parser
+ *
+ * FALLBACK: If tree-sitter fails to init (missing WASM, old Node, etc.),
+ * we fall back to the regex parser automatically.
  */
 
 import * as path from 'path';
 import {
   AnalyzedFile, FunctionInfo, ClassInfo, ParameterInfo,
-  ImportInfo, ExportInfo, APIEndpoint,
+  ImportInfo, ExportInfo, APIEndpoint, CommentInfo, PropertyInfo,
 } from '../../types/definitions';
 import { hashContent, countLines } from '../../utils/helpers';
+import { logger } from '../../utils/logger';
 
+const log = logger.child('PythonTS');
+
+// ─── Tree-Sitter Initialization ──────────────────────────────────────────────
+
+/**
+ * We load tree-sitter lazily and cache the parser instance.
+ * This avoids async init at module load time.
+ */
+let parserInstance: any = null;
+let initFailed = false;
+
+async function getParser(): Promise<any> {
+  if (parserInstance) return parserInstance;
+  if (initFailed) return null;
+
+  try {
+    const { Parser, Language } = require('web-tree-sitter');
+    await Parser.init();
+
+    // Resolve WASM path relative to the package
+    const wasmPath = require.resolve('tree-sitter-python/tree-sitter-python.wasm');
+    const Python = await Language.load(wasmPath);
+
+    const parser = new Parser();
+    parser.setLanguage(Python);
+    parserInstance = parser;
+    log.info('Tree-sitter Python parser initialized');
+    return parser;
+  } catch (err: any) {
+    log.warn(`Tree-sitter init failed, will use regex fallback: ${err.message}`);
+    initFailed = true;
+    return null;
+  }
+}
+
+// ─── Public API ──────────────────────────────────────────────────────────────
+
+/**
+ * Parse a Python file using tree-sitter AST.
+ * Falls back to regex parser if tree-sitter unavailable.
+ */
+export async function parsePythonFileAsync(
+  filePath: string,
+  content: string,
+  rootDir: string
+): Promise<AnalyzedFile> {
+  const parser = await getParser();
+  if (!parser) {
+    // Fallback to regex parser
+    const { parsePythonFile: regexParse } = require('./python-regex');
+    return regexParse(filePath, content, rootDir);
+  }
+
+  return parseWithTreeSitter(parser, filePath, content, rootDir);
+}
+
+/**
+ * Synchronous wrapper — uses cached parser if available, else regex fallback.
+ * This maintains the same signature as the JS parser for the registry.
+ */
 export function parsePythonFile(
+  filePath: string,
+  content: string,
+  rootDir: string
+): AnalyzedFile {
+  if (parserInstance) {
+    return parseWithTreeSitter(parserInstance, filePath, content, rootDir);
+  }
+
+  // Tree-sitter not ready — use regex fallback.
+  // Call parsePythonFileAsync() or warmup() to pre-initialize tree-sitter.
+  const { parsePythonFile: regexParse } = require('./python-regex');
+  return regexParse(filePath, content, rootDir);
+}
+
+// ─── Core Parser ─────────────────────────────────────────────────────────────
+
+function parseWithTreeSitter(
+  parser: any,
   filePath: string,
   content: string,
   rootDir: string
 ): AnalyzedFile {
   const relativePath = path.relative(rootDir, filePath);
   const lines = content.split('\n');
+  const tree = parser.parse(content);
+  const root = tree.rootNode;
 
   const result: AnalyzedFile = {
     filePath, relativePath, language: 'python',
@@ -30,261 +128,512 @@ export function parsePythonFile(
     apiEndpoints: [], comments: [], parseErrors: [],
   };
 
-  try {
-    result.functions = extractFunctions(lines, content);
-    result.classes = extractClasses(lines, content);
-    result.imports = extractImports(lines);
-    result.exports = inferExports(result.functions, result.classes);
-    result.apiEndpoints = detectEndpoints(lines, filePath);
-    result.comments = lines
-      .map((line, i) => ({ line, idx: i }))
-      .filter(({ line }) => line.trim().startsWith('#'))
-      .map(({ line, idx }) => ({
-        type: 'line' as const,
-        text: line.trim().substring(1).trim(),
-        line: idx + 1,
-      }));
-  } catch (err: any) {
-    result.parseErrors.push({ filePath: relativePath, message: err.message, severity: 'warning' });
+  // Walk all top-level children
+  for (const child of root.children) {
+    try {
+      switch (child.type) {
+        case 'function_definition':
+          result.functions.push(extractFunction(child, lines, []));
+          break;
+
+        case 'class_definition':
+          result.classes.push(extractClass(child, lines));
+          break;
+
+        case 'import_statement':
+          result.imports.push(extractImport(child));
+          break;
+
+        case 'import_from_statement':
+          result.imports.push(extractFromImport(child));
+          break;
+
+        case 'decorated_definition': {
+          const decorators = extractDecorators(child);
+          const inner = child.children.find(
+            (c: any) => c.type === 'function_definition' || c.type === 'class_definition'
+          );
+
+          if (inner?.type === 'function_definition') {
+            const func = extractFunction(inner, lines, decorators);
+            result.functions.push(func);
+
+            // Check for FastAPI/Flask route decorators
+            const endpoint = detectEndpoint(decorators, inner, filePath, lines);
+            if (endpoint) result.apiEndpoints.push(endpoint);
+          }
+
+          if (inner?.type === 'class_definition') {
+            const cls = extractClass(inner, lines);
+            cls.decorators = decorators;
+            result.classes.push(cls);
+          }
+          break;
+        }
+
+        case 'comment':
+          result.comments.push({
+            type: 'line',
+            text: child.text.replace(/^#\s*/, ''),
+            line: child.startPosition.row + 1,
+          });
+          break;
+
+        case 'expression_statement': {
+          // Catch module-level docstrings
+          const expr = child.children[0];
+          if (expr?.type === 'string') {
+            result.comments.push({
+              type: 'docstring',
+              text: stripQuotes(expr.text),
+              line: child.startPosition.row + 1,
+            });
+          }
+          break;
+        }
+      }
+    } catch (err: any) {
+      result.parseErrors.push({
+        filePath: relativePath,
+        line: child.startPosition?.row + 1,
+        message: `Node parse error (${child.type}): ${err.message}`,
+        severity: 'warning',
+      });
+    }
   }
+
+  // Build exports from public functions and classes
+  result.exports = inferExports(result.functions, result.classes);
 
   return result;
 }
 
-// ─── Functions ───────────────────────────────────────────────────────────────
+// ─── Function Extraction ─────────────────────────────────────────────────────
 
-function extractFunctions(lines: string[], content: string): FunctionInfo[] {
-  const functions: FunctionInfo[] = [];
-  const re = /^(\s*)(async\s+)?def\s+(\w+)\(([^)]*)\)(?:\s*->\s*(.+))?\s*:/gm;
-  let match;
+function extractFunction(node: any, lines: string[], decorators: string[]): FunctionInfo {
+  const name = node.childForFieldName('name')?.text || 'anonymous';
+  const paramsNode = node.childForFieldName('parameters');
+  const returnNode = node.childForFieldName('return_type');
+  const bodyNode = node.childForFieldName('body');
 
-  while ((match = re.exec(content)) !== null) {
-    const indent = match[1];
-    const isAsync = !!match[2];
-    const name = match[3];
-    const paramsStr = match[4];
-    const returnType = match[5]?.trim();
-    const startLine = content.substring(0, match.index).split('\n').length;
-    const endLine = findBlockEnd(lines, startLine - 1);
-    const decorators = getDecorators(lines, startLine - 1);
-    const docstring = getDocstring(lines, startLine);
-    const body = lines.slice(startLine - 1, endLine).join('\n');
+  // Check if first keyword is 'async'
+  const isAsync = node.children[0]?.type === 'async' ||
+    node.children.some((c: any) => c.type === 'async');
 
-    // Skip methods (indented inside classes) — they're captured with their class
-    if (indent.length > 0) continue;
+  const startLine = node.startPosition.row + 1;
+  const endLine = node.endPosition.row + 1;
+  const body = lines.slice(startLine - 1, endLine).join('\n');
 
-    functions.push({
-      name,
-      params: parseParams(paramsStr),
-      returnType: returnType || undefined,
-      isExported: !name.startsWith('_'),
-      isAsync, startLine, endLine,
-      complexity: estimateComplexity(body),
-      existingDoc: docstring,
-      body: body.length < 2000 ? body : undefined,
-      decorators,
-    });
-  }
+  // Extract docstring from body
+  const docstring = extractDocstring(bodyNode);
 
-  return functions;
+  return {
+    name,
+    params: extractParams(paramsNode),
+    returnType: returnNode ? returnNode.text : undefined,
+    isExported: !name.startsWith('_'),
+    isAsync,
+    startLine,
+    endLine,
+    complexity: estimateComplexity(bodyNode),
+    existingDoc: docstring,
+    body: body.length < 2000 ? body : undefined,
+    decorators,
+  };
 }
 
-// ─── Classes ─────────────────────────────────────────────────────────────────
+// ─── Parameter Extraction ────────────────────────────────────────────────────
 
-function extractClasses(lines: string[], content: string): ClassInfo[] {
-  const classes: ClassInfo[] = [];
-  const re = /^class\s+(\w+)(?:\(([^)]*)\))?\s*:/gm;
-  let match;
+/**
+ * Extract parameters from a parameters node.
+ *
+ * Tree-sitter parameter nodes can be:
+ *   identifier                  → simple name
+ *   typed_parameter             → name: Type
+ *   default_parameter           → name = value
+ *   typed_default_parameter     → name: Type = value
+ *   list_splat_pattern          → *args
+ *   dictionary_splat_pattern    → **kwargs
+ */
+function extractParams(paramsNode: any): ParameterInfo[] {
+  if (!paramsNode) return [];
 
-  while ((match = re.exec(content)) !== null) {
-    const name = match[1];
-    const bases = match[2]?.split(',').map(b => b.trim()).filter(Boolean) || [];
-    const startLine = content.substring(0, match.index).split('\n').length;
-    const endLine = findBlockEnd(lines, startLine - 1);
-    const classBody = lines.slice(startLine, endLine).join('\n');
+  const params: ParameterInfo[] = [];
 
-    // Extract methods
-    const methods: FunctionInfo[] = [];
-    const methodRe = /^\s+(async\s+)?def\s+(\w+)\(([^)]*)\)(?:\s*->\s*(.+))?\s*:/gm;
-    let mMatch;
-    while ((mMatch = methodRe.exec(classBody)) !== null) {
-      const mName = mMatch[2];
-      const mParams = parseParams(mMatch[3]).filter(p => p.name !== 'self' && p.name !== 'cls');
-      methods.push({
-        name: mName, className: name,
-        params: mParams,
-        returnType: mMatch[4]?.trim() || undefined,
-        isExported: !mName.startsWith('_'),
-        isAsync: !!mMatch[1],
-        startLine: startLine + classBody.substring(0, mMatch.index).split('\n').length,
-        endLine: startLine + classBody.substring(0, mMatch.index).split('\n').length + 5,
-        complexity: 1, decorators: [],
-      });
-    }
+  for (const child of paramsNode.children) {
+    switch (child.type) {
+      case 'identifier': {
+        // Skip 'self' and 'cls'
+        if (child.text === 'self' || child.text === 'cls') continue;
+        params.push({ name: child.text, isOptional: false });
+        break;
+      }
 
-    // Extract properties (self.xxx = ...)
-    const props: Array<{ name: string; type?: string; isStatic: boolean; isPrivate: boolean }> = [];
-    const propRe = /self\.(\w+)\s*(?::\s*(\w+))?\s*=/g;
-    let pMatch;
-    const seen = new Set<string>();
-    while ((pMatch = propRe.exec(classBody)) !== null) {
-      if (!seen.has(pMatch[1])) {
-        seen.add(pMatch[1]);
-        props.push({ name: pMatch[1], type: pMatch[2], isStatic: false, isPrivate: pMatch[1].startsWith('_') });
+      case 'typed_parameter': {
+        const name = child.children.find((c: any) => c.type === 'identifier')?.text;
+        if (name === 'self' || name === 'cls') continue;
+        const type = child.childForFieldName('type')?.text;
+        if (name) params.push({ name, type, isOptional: false });
+        break;
+      }
+
+      case 'default_parameter': {
+        const name = child.childForFieldName('name')?.text;
+        const value = child.childForFieldName('value')?.text;
+        if (name === 'self' || name === 'cls') continue;
+        if (name) params.push({
+          name,
+          defaultValue: value ? formatDefaultValue(value) : undefined,
+          isOptional: true,
+        });
+        break;
+      }
+
+      case 'typed_default_parameter': {
+        const name = child.childForFieldName('name')?.text;
+        const type = child.childForFieldName('type')?.text;
+        const value = child.childForFieldName('value')?.text;
+        if (name === 'self' || name === 'cls') continue;
+        if (name) params.push({
+          name, type,
+          defaultValue: value ? formatDefaultValue(value) : undefined,
+          isOptional: true,
+        });
+        break;
+      }
+
+      case 'list_splat_pattern': {
+        const name = child.children.find((c: any) => c.type === 'identifier')?.text;
+        if (name) params.push({ name: `*${name}`, isOptional: true });
+        break;
+      }
+
+      case 'dictionary_splat_pattern': {
+        const name = child.children.find((c: any) => c.type === 'identifier')?.text;
+        if (name) params.push({ name: `**${name}`, isOptional: true });
+        break;
       }
     }
+  }
 
-    classes.push({
-      name,
-      superClass: bases[0] || undefined,
-      implements: [],
-      methods, properties: props,
-      isExported: !name.startsWith('_'),
-      startLine, endLine,
-      existingDoc: getDocstring(lines, startLine),
-      decorators: getDecorators(lines, startLine - 1),
+  return params;
+}
+
+function formatDefaultValue(value: string): string {
+  // Keep quotes for strings, raw for everything else
+  return value;
+}
+
+// ─── Class Extraction ────────────────────────────────────────────────────────
+
+function extractClass(node: any, lines: string[]): ClassInfo {
+  const name = node.childForFieldName('name')?.text || 'Anonymous';
+  const bodyNode = node.childForFieldName('body');
+  const superclassNode = node.childForFieldName('superclasses');
+
+  // Extract superclass(es)
+  let superClass: string | undefined;
+  if (superclassNode) {
+    const bases = superclassNode.children
+      .filter((c: any) => c.type === 'identifier' || c.type === 'attribute')
+      .map((c: any) => c.text);
+    superClass = bases[0];
+  }
+
+  // Extract methods and properties from class body
+  const methods: FunctionInfo[] = [];
+  const properties: PropertyInfo[] = [];
+  const seenProps = new Set<string>();
+
+  if (bodyNode) {
+    for (const member of bodyNode.children) {
+      if (member.type === 'function_definition') {
+        const method = extractFunction(member, lines, []);
+        method.className = name;
+        methods.push(method);
+        // Extract self.xxx = from method bodies
+        extractSelfAssignments(member, properties, seenProps);
+      }
+
+      if (member.type === 'decorated_definition') {
+        const decorators = extractDecorators(member);
+        const funcNode = member.children.find((c: any) => c.type === 'function_definition');
+        if (funcNode) {
+          const method = extractFunction(funcNode, lines, decorators);
+          method.className = name;
+          methods.push(method);
+          extractSelfAssignments(funcNode, properties, seenProps);
+        }
+      }
+
+      // Class-level assignments: field: Type = value
+      if (member.type === 'expression_statement') {
+        const assign = member.children[0];
+        if (assign?.type === 'assignment') {
+          const left = assign.childForFieldName('left');
+          if (left?.type === 'identifier' && !seenProps.has(left.text)) {
+            seenProps.add(left.text);
+            const typeNode = assign.childForFieldName('type');
+            properties.push({
+              name: left.text,
+              type: typeNode?.text,
+              isStatic: false,
+              isPrivate: left.text.startsWith('_'),
+            });
+          }
+        }
+      }
+    }
+  }
+
+  const docstring = extractDocstring(bodyNode);
+
+  return {
+    name,
+    superClass,
+    implements: [],
+    methods,
+    properties,
+    isExported: !name.startsWith('_'),
+    startLine: node.startPosition.row + 1,
+    endLine: node.endPosition.row + 1,
+    existingDoc: docstring,
+    decorators: [],
+  };
+}
+
+/**
+ * Walk a function body to find self.xxx = assignments.
+ * This is how Python declares instance properties.
+ */
+function extractSelfAssignments(
+  funcNode: any,
+  properties: PropertyInfo[],
+  seen: Set<string>
+): void {
+  const walk = (node: any) => {
+    if (!node) return;
+    if (node.type === 'assignment') {
+      const left = node.childForFieldName('left');
+      if (left?.type === 'attribute') {
+        const obj = left.childForFieldName('object');
+        const attr = left.childForFieldName('attribute');
+        if (obj?.text === 'self' && attr && !seen.has(attr.text)) {
+          seen.add(attr.text);
+          properties.push({
+            name: attr.text,
+            isStatic: false,
+            isPrivate: attr.text.startsWith('_'),
+          });
+        }
+      }
+    }
+    for (const child of node.children || []) {
+      walk(child);
+    }
+  };
+  walk(funcNode.childForFieldName('body'));
+}
+
+// ─── Import Extraction ───────────────────────────────────────────────────────
+
+function extractImport(node: any): ImportInfo {
+  // import os / import os as alias
+  const names = node.children
+    .filter((c: any) => c.type === 'dotted_name' || c.type === 'aliased_import')
+    .map((c: any) => {
+      if (c.type === 'aliased_import') {
+        return c.childForFieldName('name')?.text || c.text;
+      }
+      return c.text;
     });
-  }
 
-  return classes;
+  return {
+    source: names[0] || node.text.replace('import ', '').trim(),
+    specifiers: [],
+    isRelative: false,
+    defaultImport: names[0],
+  };
 }
 
-// ─── Imports ─────────────────────────────────────────────────────────────────
+function extractFromImport(node: any): ImportInfo {
+  const moduleNode = node.childForFieldName('module_name');
+  const source = moduleNode?.text || '';
 
-function extractImports(lines: string[]): ImportInfo[] {
-  const imports: ImportInfo[] = [];
-  for (const line of lines) {
-    const t = line.trim();
-    const fromMatch = t.match(/^from\s+([\w.]+)\s+import\s+(.+)/);
-    if (fromMatch) {
-      imports.push({
-        source: fromMatch[1],
-        specifiers: fromMatch[2].split(',').map(s => s.trim().split(/\s+as\s+/)[0]),
-        isRelative: fromMatch[1].startsWith('.'),
-      });
-      continue;
+  const specifiers: string[] = [];
+  for (const child of node.children) {
+    if (child.type === 'dotted_name' && child !== moduleNode) {
+      specifiers.push(child.text);
     }
-    const impMatch = t.match(/^import\s+([\w.]+)(?:\s+as\s+(\w+))?/);
-    if (impMatch) {
-      imports.push({
-        source: impMatch[1], specifiers: [],
-        isRelative: false, defaultImport: impMatch[2] || impMatch[1],
-      });
+    if (child.type === 'aliased_import') {
+      specifiers.push(child.childForFieldName('name')?.text || child.text);
+    }
+    // from x import a, b, c — the names are in an import_list or directly
+    if (child.type === 'import_list') {
+      for (const item of child.children) {
+        if (item.type === 'dotted_name' || item.type === 'identifier') {
+          specifiers.push(item.text);
+        }
+        if (item.type === 'aliased_import') {
+          specifiers.push(item.childForFieldName('name')?.text || item.text);
+        }
+      }
     }
   }
-  return imports;
+
+  return {
+    source,
+    specifiers: specifiers.filter(s => s && s !== ',' && s !== '(' && s !== ')'),
+    isRelative: source.startsWith('.'),
+  };
 }
 
-// ─── API Endpoints ───────────────────────────────────────────────────────────
+// ─── Decorator Extraction ────────────────────────────────────────────────────
 
-function detectEndpoints(lines: string[], filePath: string): APIEndpoint[] {
-  const endpoints: APIEndpoint[] = [];
-  const httpMethods = ['get', 'post', 'put', 'delete', 'patch'];
+function extractDecorators(decoratedNode: any): string[] {
+  return decoratedNode.children
+    .filter((c: any) => c.type === 'decorator')
+    .map((c: any) => c.text);
+}
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
+// ─── Endpoint Detection ──────────────────────────────────────────────────────
+
+/**
+ * Detect FastAPI/Flask route endpoints from decorators.
+ *
+ * Patterns:
+ *   @router.get("/path")      — FastAPI
+ *   @app.post("/path")        — FastAPI/Flask
+ *   @app.route("/path", ...)  — Flask
+ */
+function detectEndpoint(
+  decorators: string[],
+  funcNode: any,
+  filePath: string,
+  lines: string[]
+): APIEndpoint | null {
+  const httpMethods = ['get', 'post', 'put', 'delete', 'patch', 'options', 'head'];
+
+  for (const dec of decorators) {
+    // FastAPI pattern: @router.get("/path") or @app.post("/path")
     for (const method of httpMethods) {
       const re = new RegExp(`@\\w+\\.${method}\\(["']([^"']+)["']`);
-      const m = line.match(re);
-      if (m) {
-        let handler = 'unknown';
-        for (let j = i + 1; j < lines.length; j++) {
-          const fm = lines[j].match(/(?:async\s+)?def\s+(\w+)/);
-          if (fm) { handler = fm[1]; break; }
-          if (!lines[j].trim().startsWith('@')) break;
-        }
-        const requiresAuth = lines.slice(i, Math.min(i + 5, lines.length))
-          .some(l => l.includes('Depends') && (l.includes('auth') || l.includes('current_user')));
-        endpoints.push({
-          method: method.toUpperCase(), path: m[1],
-          handler, middleware: [], requiresAuth,
-          filePath, line: i + 1,
-        });
+      const match = dec.match(re);
+      if (match) {
+        const handler = funcNode.childForFieldName('name')?.text || 'unknown';
+        const paramsText = funcNode.childForFieldName('parameters')?.text || '';
+
+        const requiresAuth = paramsText.includes('current_user') ||
+          (paramsText.includes('Depends') && paramsText.includes('auth'));
+
+        return {
+          method: method.toUpperCase(),
+          path: match[1],
+          handler,
+          middleware: [],
+          requiresAuth,
+          filePath,
+          line: funcNode.startPosition.row + 1,
+        };
       }
     }
 
-    // Flask @app.route
-    const flaskMatch = line.match(/@\w+\.route\(["']([^"']+)["'](?:.*methods=\[([^\]]+)\])?/);
+    // Flask pattern: @app.route("/path", methods=["GET"])
+    const flaskMatch = dec.match(/@\w+\.route\(["']([^"']+)["'](?:.*methods=\[([^\]]+)\])?/);
     if (flaskMatch) {
-      const methods = flaskMatch[2] ? flaskMatch[2].replace(/["'\s]/g, '').split(',') : ['GET'];
-      let handler = 'unknown';
-      for (let j = i + 1; j < lines.length; j++) {
-        const fm = lines[j].match(/def\s+(\w+)/);
-        if (fm) { handler = fm[1]; break; }
-      }
-      for (const m of methods) {
-        endpoints.push({
-          method: m.toUpperCase(), path: flaskMatch[1],
-          handler, middleware: [], requiresAuth: false,
-          filePath, line: i + 1,
-        });
-      }
+      const handler = funcNode.childForFieldName('name')?.text || 'unknown';
+      const methods = flaskMatch[2]
+        ? flaskMatch[2].replace(/["'\s]/g, '').split(',')
+        : ['GET'];
+
+      // Return first method; caller can expand if needed
+      return {
+        method: methods[0].toUpperCase(),
+        path: flaskMatch[1],
+        handler,
+        middleware: [],
+        requiresAuth: false,
+        filePath,
+        line: funcNode.startPosition.row + 1,
+      };
     }
   }
-  return endpoints;
+
+  return null;
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Docstring Extraction ────────────────────────────────────────────────────
 
-function parseParams(str: string): ParameterInfo[] {
-  if (!str.trim()) return [];
-  return str.split(',').map(p => {
-    const m = p.trim().match(/^(\*{0,2}\w+)(?:\s*:\s*([^=]+))?(?:\s*=\s*(.+))?$/);
-    if (m) return { name: m[1], type: m[2]?.trim(), defaultValue: m[3]?.trim(), isOptional: !!m[3] };
-    return { name: p.trim(), isOptional: false };
-  });
-}
+function extractDocstring(bodyNode: any): string | undefined {
+  if (!bodyNode) return undefined;
 
-function findBlockEnd(lines: string[], startIdx: number): number {
-  const baseIndent = (lines[startIdx]?.match(/^(\s*)/)?.[1].length) || 0;
-  for (let i = startIdx + 1; i < lines.length; i++) {
-    if (lines[i].trim() === '') continue;
-    const indent = (lines[i].match(/^(\s*)/)?.[1].length) || 0;
-    if (indent <= baseIndent && lines[i].trim() !== '') return i;
-  }
-  return lines.length;
-}
+  // First statement in body — if it's a string expression, it's a docstring
+  const first = bodyNode.children.find(
+    (c: any) => c.type === 'expression_statement'
+  );
+  if (!first) return undefined;
 
-function getDocstring(lines: string[], startLine: number): string | undefined {
-  for (let i = startLine; i < Math.min(startLine + 3, lines.length); i++) {
-    const line = lines[i].trim();
-    const quote = line.startsWith('"""') ? '"""' : line.startsWith("'''") ? "'''" : null;
-    if (!quote) continue;
-    if (line.endsWith(quote) && line.length > 6) return line.slice(3, -3).trim();
-    const docLines = [line.slice(3)];
-    for (let j = i + 1; j < lines.length; j++) {
-      if (lines[j].trim().endsWith(quote)) {
-        docLines.push(lines[j].trim().slice(0, -3));
-        return docLines.join('\n').trim();
-      }
-      docLines.push(lines[j].trim());
-    }
+  const expr = first.children[0];
+  if (expr?.type === 'string') {
+    return stripQuotes(expr.text);
   }
   return undefined;
 }
 
-function getDecorators(lines: string[], funcLineIdx: number): string[] {
-  const decs: string[] = [];
-  for (let i = funcLineIdx - 1; i >= 0; i--) {
-    const line = lines[i].trim();
-    if (line.startsWith('@')) decs.unshift(line);
-    else if (line !== '' && !line.startsWith('#')) break;
+function stripQuotes(text: string): string {
+  // Remove triple quotes (""" or ''')
+  if (text.startsWith('"""') && text.endsWith('"""')) {
+    return text.slice(3, -3).trim();
   }
-  return decs;
+  if (text.startsWith("'''") && text.endsWith("'''")) {
+    return text.slice(3, -3).trim();
+  }
+  // Single quotes
+  if ((text.startsWith('"') && text.endsWith('"')) ||
+      (text.startsWith("'") && text.endsWith("'"))) {
+    return text.slice(1, -1).trim();
+  }
+  return text.trim();
 }
+
+// ─── Complexity Estimation ───────────────────────────────────────────────────
+
+/**
+ * Estimate cyclomatic complexity by counting branching nodes.
+ * Tree-sitter makes this trivial — just walk and count.
+ */
+function estimateComplexity(bodyNode: any): number {
+  if (!bodyNode) return 1;
+
+  let complexity = 1;
+  const branchTypes = new Set([
+    'if_statement', 'elif_clause', 'for_statement',
+    'while_statement', 'except_clause', 'with_statement',
+    'conditional_expression',  // ternary: x if cond else y
+    'boolean_operator',        // and / or
+    'case_clause',             // match/case (Python 3.10+)
+  ]);
+
+  const walk = (node: any) => {
+    if (branchTypes.has(node.type)) complexity++;
+    for (const child of node.children || []) {
+      walk(child);
+    }
+  };
+  walk(bodyNode);
+
+  return complexity;
+}
+
+// ─── Export Inference ─────────────────────────────────────────────────────────
 
 function inferExports(functions: FunctionInfo[], classes: ClassInfo[]): ExportInfo[] {
   return [
-    ...functions.filter(f => !f.name.startsWith('_')).map(f => ({ name: f.name, type: 'function' as const, isDefault: false })),
-    ...classes.filter(c => !c.name.startsWith('_')).map(c => ({ name: c.name, type: 'class' as const, isDefault: false })),
+    ...functions
+      .filter(f => !f.name.startsWith('_'))
+      .map(f => ({ name: f.name, type: 'function' as const, isDefault: false })),
+    ...classes
+      .filter(c => !c.name.startsWith('_'))
+      .map(c => ({ name: c.name, type: 'class' as const, isDefault: false })),
   ];
-}
-
-function estimateComplexity(code: string): number {
-  let c = 1;
-  for (const kw of ['if ', 'elif ', 'for ', 'while ', 'except ', 'and ', 'or ']) {
-    const matches = code.match(new RegExp(`\\b${kw.trim()}\\b`, 'g'));
-    if (matches) c += matches.length;
-  }
-  return c;
 }

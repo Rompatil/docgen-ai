@@ -2,7 +2,7 @@
 
 ## Overview
 
-[No API key configured — summaries unavailable]
+The `core/cache` module contains 1 file and exports 1 public symbol.  Dependencies: types, utils. Used by: core/analyzers.
 
 ## Files
 
@@ -30,3 +30,7 @@ This module depends on:
 
 - [`types`](./modules/types.md)
 - [`utils`](./modules/utils.md)
+
+## Used By
+
+- [`core/analyzers`](./modules/core-analyzers.md)

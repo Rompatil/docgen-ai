@@ -2,7 +2,7 @@
 
 ## Overview
 
-[No API key configured — summaries unavailable]
+The `types` module contains 1 file and exports 0 public symbols.  Dependencies: none. Used by: ai, cli, config, core/analyzers, core/cache, core/generators, core/parsers, core.
 
 ## Files
 
